@@ -1,0 +1,12 @@
+﻿/* Center table headers */
+#userTable thead th {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Center table body cells as well, optional */
+#userTable tbody td {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+

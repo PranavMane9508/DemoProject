@@ -1,0 +1,374 @@
+﻿@*@model IEnumerable<DemoLibrary.Demo>*@
+
+@{
+    ViewBag.Title = "Showitems";
+}
+
+<div class="modal fade" id="myModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" id="modalContent">
+        </div>
+    </div>
+</div>
+
+<div class="container my-3">
+    <div class="row justify-content-between">
+        <div class="col-3">
+            <button type="button" id="GetNewUser" class="btn btn-primary">Create New</button>
+        </div>
+        <div class="col-3 text-center">
+            @*<button id="exportSelected" class="btn btn-success">Export Selected to Excel</button>*@
+            <button id="exportSelected1" class="btn btn-success">Export Selected to Excel</button>
+        </div>
+
+        <div class="col-3 text-end">
+            @*<button id="exportSelected" class="btn btn-success">Export Selected to Excel</button>*@
+            <button id="exportButton" class="btn btn-success">Export to PDF</button>
+        </div>
+    </div>
+</div>
+
+
+@*<h2>Showitems</h2>*@
+
+@*<p>
+        @Html.ActionLink("Create New", "Registration")
+    </p>*@
+
+<div id="userTableContainer"></div>
+
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+
+            LoadUsers();
+                function LoadUsers() {
+                    @*$.get('@Url.Action("LoadUsersPartial", "Home")', function (data) {
+                        //$('#userTableContainer').html(data);
+
+                    });*@
+                    console.log('came here');
+                    $('#userTableContainer').load('@Url.Action("LoadTablePartial", "Home")', function () {
+                        console.log('came here');
+                        $('#userTable').DataTable({
+                            ajax: {
+                                url: '@Url.Action("GetUsersJson", "Home")',
+                                dataSrc: ''
+                            },
+                            destroy: true,
+                            scrollX: true,
+                            columns: [
+                                {
+                                    data: null,
+                                    render: function (data, type, row) {
+                                        return `<input type="checkbox" class="row-checkbox" data-user-id="${row.Id}">`;
+                                    },
+                                    orderable: false,
+                                    searchable: false
+                                },
+                                { data: 'Id', visible: false },
+                                { data: 'Name' },
+                                { data: 'Email' },
+                                { data: 'Contact', type: 'phone' },
+                                { data: 'Gender' },
+                                { data: 'Address' },
+                                { data: 'CountryName' },
+                                { data: 'StateName' },
+                                { data: 'CityName' },
+                                {
+                                    data: 'Id',
+                                    render: function (data, type, row) {
+                                        return `
+                                            <button class="btn btn-sm btn-primary UpdateUser" data-user-id="${data}">Edit</button>
+                                            <button class="btn btn-sm btn-danger DeleteUser" data-user-id="${data}">Delete</button>
+                                        `;
+                                    }
+                                }
+                            ],
+                            language: {
+                                lengthMenu: "Record _MENU_ "
+                            },
+                            pagingType: 'simple_numbers',
+                            drawCallback: function () {
+                                console.log('came here');
+                                $('.dataTables_paginate button').addClass('btn btn-sm btn-outline-primary');
+                                //$('.dataTables_paginate li').addClass('p-0');
+                            }
+                        });
+                    });
+            }
+            $(document).on("click", "#selectAll", function () {
+                var isChecked = $(this).prop('checked');
+                $('#userTable .row-checkbox').prop('checked', isChecked);
+            });
+
+            $('#exportSelected').on('click', function () {
+                const table = $('#userTable').DataTable();
+                const selectedData = [];
+
+                // Loop through all rows and find the ones with checked checkboxes
+                $('#userTable tbody input.row-checkbox:checked').each(function () {
+                    const row = $(this).closest('tr');
+                    const rowData = table.row(row).data();
+
+                    // Push only the fields you want in Excel
+                    selectedData.push({
+                        Id: rowData.Id,
+                        Name: rowData.Name,
+                        Email: rowData.Email,
+                        Contact: rowData.Contact,
+                        Gender: rowData.Gender,
+                        Address: rowData.Address,
+                        Country: rowData.CountryName,
+                        State: rowData.StateName,
+                        City: rowData.CityName
+                    });
+                });
+
+                if (selectedData.length === 0) {
+                    alert('Please select at least one row to export.');
+                    return;
+                }
+
+                // Create a worksheet and export using SheetJS
+                const worksheet = XLSX.utils.json_to_sheet(selectedData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+
+                XLSX.writeFile(workbook, `SelectedUsers ${getFormattedDateTime()}.xlsx`);
+            });
+
+            $('#exportSelected1').on('click', function () {
+                var selectedIds = [];
+                $('.row-checkbox:checked').each(function () {
+                    selectedIds.push($(this).data('user-id')); // or use .val() if checkbox value is set
+                });
+
+                if (selectedIds.length === 0) {
+                    alert("Please select at least one row.");
+                    return;
+                }
+                console.log("came here 225");
+
+                $.ajax({
+                    url: '@Url.Action("ExportSelectedToExcel", "Home")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(selectedIds),
+                    dataType: 'json',
+                    success: function (response, status, xhr) {
+                        //const filename = xhr.getResponseHeader('Content-Disposition')
+                        //    ?.split('filename=')[1]
+                        //    ?.replace(/"/g, '') || `SelectedUsers ${getFormattedDateTime()}.xlsx`;
+                        //const url = window.URL.createObjectURL(data);
+                        //const a = document.createElement('a');
+                        //a.href = url;
+                        //a.download = filename;
+                        //document.body.appendChild(a);
+                        //a.click();
+                        //a.remove();
+                        //window.URL.revokeObjectURL(url);
+
+                        if (response && response.url) {
+                            //window.open(response.url, '_blank'); // open file in new tab
+                            let fileUrl = response.url;
+
+                            // If response.url is relative (starts with '/'), prepend origin
+                            if (fileUrl.startsWith('/')) {
+                                fileUrl = window.location.origin + fileUrl;
+                            }
+                            const officeViewerUrl = "https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fileUrl);
+
+                            console.log(officeViewerUrl);
+
+                            window.open(officeViewerUrl, "_blank");
+                        } else {
+                            alert("Failed to get file URL.");
+                        }
+                    },
+                    error: function () {
+                        alert("Error exporting file.");
+                    }
+                });
+            });
+
+            function getFormattedDateTime() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0'); // Here Months are 0-indexed
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+
+                return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            }
+
+            $('#exportButton').on('click', function () {
+                const selectedIds = [];
+                $('#userTable tbody input.row-checkbox:checked').each(function () {
+                    selectedIds.push($(this).data('user-id'));
+                });
+
+                const selectedColumns = ["Name", "Email", "Contact", "Gender", "Address", "CountryName", "StateName", "CityName"]; // Or build dynamically
+
+                if (selectedIds.length === 0) {
+                    alert('Please select at least one row to export.');
+                    return;
+                }
+
+                // Send to controller
+                $('<form>', {
+                    method: 'POST',
+                    action: '/Home/ExportPdfByIdsAndColumns',
+                    target: '_blank'
+                }).append($('<input>', {
+                    type: 'hidden',
+                    name: 'ids',
+                    value: JSON.stringify(selectedIds)
+                })).append($('<input>', {
+                    type: 'hidden',
+                    name: 'columns',
+                    value: JSON.stringify(selectedColumns)
+                })).appendTo('body').submit().remove();
+
+            });
+
+            //console.log(getFormattedDateTime());  // Example: "2025-07-01 14:45:30"
+
+
+
+                $("#GetNewUser").click(function () {
+                    $.get('@Url.Action("UpdateInsert","Home")', function (data) {
+                        $('#modalContent').html(data);
+                        $('#myModal').modal('show');
+                    });
+                });
+                $(document).on("change", "#country", function () {
+                    var countryid = $(this).val();
+                    $('#State').empty().append('<option> -- Select State --</option>');
+                    $.get('@Url.Action("GetStates","Home")' + '?CountryId=' + countryid, function (data) {
+                        $.each(data, function (i, state) {
+                            $('#State').append($('<option></option>').val(state.StateId).html(state.StateName));
+                        });
+                        $('#City').empty().append('<option> -- Select City --</option>');
+                    });
+                });
+                $(document).on("change", "#State", function () {
+                    var StateId = $(this).val();
+                    $('#City').empty().append('<option> -- Select City --</option>');
+                    $.get('@Url.Action("GetCities", "Home")' + '?StateId=' + StateId, function (data) {
+                        $.each(data, function (i, city) {
+                            $('#City').append($('<option></option>').val(city.CityId).html(city.CityName));
+                        });
+                    });
+                });
+                $(document).on("submit", "#InsertUpdateForm", function (e) {
+                    e.preventDefault();
+
+                    const id = parseInt($('#Id').val());
+                    const actionTitle = id !== 0 ? "Are You Want to Update?" : "Are You Want to Register?";
+
+                    Swal.fire({
+                        title: actionTitle,
+                        icon: "info",
+                        showCancelButton: true,
+                        confirmButtonColor: "#3085d6",
+                        cancelButtonColor: "#d33",
+                        confirmButtonText: "Yes!",
+                        cancelButtonText: "No!",
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                type: "POST",
+                                url: $('#InsertUpdateForm').attr('action'),
+                                data: $('#InsertUpdateForm').serialize(),
+                                success: function (response) {
+                                    const Toast = Swal.mixin({
+                                        toast: true,
+                                        position: "top-end",
+                                        showConfirmButton: false,
+                                        timer: 3000,
+                                        timerProgressBar: true,
+                                        didOpen: (toast) => {
+                                            toast.onmouseenter = Swal.stopTimer;
+                                            toast.onmouseleave = Swal.resumeTimer;
+                                        }
+                                    });
+                                    Toast.fire({
+                                        icon: "success",
+                                        title: "Process Done Successfully"
+                                    });
+                                    setTimeout(function () {
+                                        $('#myModal').modal('hide');
+                                        LoadUsers();
+                                    }, 3000);
+                                },
+                                error: function () {
+                                    Swal.fire("Error", "Something went wrong!", "error");
+                                }
+                            });
+                        }
+                    });
+                });
+                $(document).on('click', '.UpdateUser', function () {
+                    var userId = $(this).data('user-id');
+                    $.get('@Url.Action("UpdateInsert","Home")' + '?id=' + userId, function (data) {
+                        $('#modalContent').html(data);
+                        $('#myModal').modal('show');
+
+                        setTimeout(function () {
+                            $('#country').trigger('change');
+
+                            setTimeout(function () {
+                                var selectedState = $('#State').data('selected');
+                                if (selectedState) {
+                                    $('#State').val(selectedState).trigger('change');
+
+                                    setTimeout(function () {
+                                        var selectedCity = $('#City').data('selected');
+                                        if (selectedCity) {
+                                            $('#City').val(selectedCity);
+                                        }
+                                    }, 500);
+                                }
+                            }, 500);
+                        }, 300);
+                    });
+                });
+
+                $(document).on('click', '.DeleteUser', function () {
+                    var userId = $(this).data('user-id');
+                    Swal.fire({
+                        title: "Are You Sure You Want To Delete?",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#3085d6",
+                        cancelButtonColor: "#d33",
+                        confirmButtonText: "Yes, delete it!",
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: '@Url.Action("DeleteUser", "Home")',
+                                type: 'POST',
+                                data: { id: userId },
+                                success: function (response) {
+                                    if (response.success) {
+                                        Swal.fire("Deleted!", "User has been deleted.", "success");
+                                        LoadUsers();
+                                    } else {
+                                        Swal.fire("Error!", "Could not delete the user.", "error");
+                                    }
+                                },
+                                error: function () {
+                                    Swal.fire("Error!", "Something went wrong!", "error");
+                                }
+                            });
+                        }
+                    });
+                });
+
+            });
+    </script>
+}

@@ -1,0 +1,29 @@
+﻿@model DemoProject.Models.HtmlPdfViewModel
+
+@{ 
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>RawHtmlView</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 8px;
+        }
+    </style>
+</head>
+<body>
+    <p style="text-align:center;">@Model.PageName</p>
+    <p style="text-align:center;">@Model.PageTime</p>
+    @Html.Raw(Model.HtmlContent)  <!-- Render the raw HTML content -->
+</body>
+</html>

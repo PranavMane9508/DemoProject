@@ -1,0 +1,119 @@
+﻿@model DemoLibrary.Demo
+
+@{
+    ViewBag.Title = "_InsertUpdate";
+    var countries = ViewBag.countries as List<DemoLibrary.Demo>;
+    var states = ViewBag.states as List<DemoLibrary.Demo>;
+    var cities = ViewBag.cities as List<DemoLibrary.Demo>;
+    var selectedCountryId = 0;
+    int selectedStateId = 0;
+    int selectedCityId = 0;
+
+    if (Model.Id != 0)
+    {
+        selectedCityId = Model.CityId;
+        selectedStateId = Model.StateId;
+        selectedCountryId = Model.CountryId;
+    }
+}
+
+@using (Html.BeginForm("InsertUpdate", "Home", FormMethod.Post, new { @id = "InsertUpdateForm" }))
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(model => model.Id);
+<div class="modal-header text-center">
+    <h3> @(Model.Id == 0 ? "Register" : "Update") User </h3>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+    <div class="modal-body">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col">
+                    <div>
+                        @Html.LabelFor(model => model.Name) :
+                        @Html.EditorFor(model => model.Name, new { htmlAttributes = new { @class = "form-control" } })
+                        @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
+                    </div>
+
+                    <div>
+                        @Html.LabelFor(model => model.Contact) :
+                        @Html.EditorFor(model => model.Contact, new { htmlAttributes = new { @class = "form-control", type = "tel" } })
+                        @Html.ValidationMessageFor(model => model.Contact, "", new { @class = "text-danger" })
+                    </div>
+
+                    <div>
+                        @Html.LabelFor(model => model.Gender) :
+                        <div>
+                            @Html.RadioButtonFor(model => model.Gender, "Male", new { id = "male-true", @class = "form-check-input" })
+                            <label for="male-true" class="me-5">Male</label>
+                            @Html.RadioButtonFor(model => model.Gender, "Female", new { id = "female-true", @class = "form-check-input ms-5" })
+                            <label for="female-true">Female</label>
+                        </div>
+                    </div>
+
+                    <div>
+                        @Html.LabelFor(model => model.Email) :
+                        @Html.EditorFor(model => model.Email, new { htmlAttributes = new { @class = "form-control", type = "email" } })
+                        @Html.ValidationMessageFor(model => model.Email, "", new { @class = "text-danger" })
+                    </div>
+
+                    <div>
+                        @Html.LabelFor(model => model.Password) :
+                        @Html.EditorFor(model => model.Password, new { htmlAttributes = new { @class = "form-control", type = "password" } })
+                        @Html.ValidationMessageFor(model => model.Password, "", new { @class = "text-danger" })
+                    </div>
+
+                    <div>
+                        @Html.LabelFor(model => model.Address) :
+                        @Html.TextAreaFor(model => model.Address, new { @class = "form-control", rows = "3", @style = "resize:none;" })
+                        @Html.ValidationMessageFor(model => model.Address, "", new { @class = "text-danger" })
+                    </div>
+
+                    <div>
+                        @Html.Label("Country Name") :
+                        @Html.DropDownList("CountryId",
+                     new SelectList(countries, "CountryId", "CountryName", selectedCountryId),
+                     "-- Select Country --", new { @class = "form-control", @id = "country" })
+                    </div>
+
+                    @if (Model.Id != 0)
+                    {
+                        <div>
+                            @Html.Label("State Name") :
+                            @Html.DropDownList("StateId", new SelectList(states.Where(s => s.CountryId == selectedCountryId), "StateId", "StateName", selectedStateId),
+                            "-- Select State --", new { @class = "form-control", @id = "State", data_selected = selectedStateId })
+                        </div>
+
+                        <div>
+                            @Html.Label("City Name") :
+                            @Html.DropDownList("CityId", new SelectList(cities.Where(c => c.StateId == selectedStateId), "CityId", "CityName", selectedCityId),
+                            "-- Select City --", new { @class = "form-control", @id = "City", data_selected = selectedCityId })
+                            @Html.ValidationMessageFor(model => model.CityId, "", new { @class = "text-danger" })
+                        </div>
+                    }
+                    else
+                    {
+                        <div>
+                            @Html.Label("State") :
+                            <select id="State" name="StateId" class="form-control">
+                                <option value="">-- Select State --</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            @Html.Label("City") :
+                            <select id="City" name="CityId" class="form-control">
+                                <option value="">-- Select City --</option>
+                            </select>
+                            @Html.ValidationMessageFor(model => model.CityId, "", new { @class = "text-danger" })
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+    </div>
+}
